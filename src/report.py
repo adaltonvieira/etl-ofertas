@@ -12,10 +12,10 @@ def relatorio_texto():
     conn = get_connection()
     linhas = conn.execute("""
         SELECT produto,
-               COUNT(*)             AS coletas,
-               MIN(preco)           AS minimo,
-               MAX(preco)           AS maximo,
-               ROUND(AVG(preco), 4) AS media
+               COUNT(*)                     AS coletas,
+               MIN(preco)                   AS minimo,
+               MAX(preco)                   AS maximo,
+               ROUND(AVG(preco)::numeric, 4) AS media
         FROM precos
         GROUP BY produto
     """).fetchall()
@@ -43,7 +43,6 @@ def grafico_variacao():
     produtos = list(series.keys())
     n = len(produtos)
 
-    # Um painel por produto, cada um com seu proprio eixo Y.
     fig, axes = plt.subplots(n, 1, figsize=(11, 3 * n), sharex=True)
     if n == 1:
         axes = [axes]

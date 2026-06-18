@@ -1,36 +1,42 @@
-import sqlite3
-from pathlib import Path
+import os
+import psycopg
+from psycopg.rows import dict_row
+from dotenv import load_dotenv
 
-DB_PATH = Path(__file__).resolve().parent.parent / "data" / "precos.db"
+load_dotenv()   # carrega as variaveis do arquivo .env
 
 
 def get_connection():
-    """Abre uma conexão com o banco SQLite."""
-    conn = sqlite3.connect(DB_PATH)
-    conn.execute("PRAGMA journal_mode=WAL;")
-    conn.row_factory = sqlite3.Row
-    return conn
+    """Abre uma conexao com o PostgreSQL."""
+    return psycopg.connect(
+        host=os.environ.get("DB_HOST", "localhost"),
+        dbname=os.environ.get("DB_NAME", "etl_ofertas"),
+        user=os.environ.get("DB_USER", "adalton"),
+        password=os.environ["DB_PASSWORD"],
+        row_factory=dict_row,
+    )
 
 
 def init_db():
-    """Cria a tabela e o índice, se ainda não existirem."""
+    """Cria a tabela e o indice, se ainda nao existirem."""
     conn = get_connection()
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS precos (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            produto     TEXT    NOT NULL,
-            preco       REAL    NOT NULL,
-            moeda       TEXT    NOT NULL DEFAULT 'BRL',
-            coletado_em TEXT    NOT NULL
-        );
-    """)
-    conn.execute("""
-        CREATE INDEX IF NOT EXISTS idx_precos_produto_data
-        ON precos (produto, coletado_em);
-    """)
+    with conn.cursor() as cur:
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS precos (
+                id          SERIAL PRIMARY KEY,
+                produto     TEXT NOT NULL,
+                preco       DOUBLE PRECISION NOT NULL,
+                moeda       TEXT NOT NULL DEFAULT 'BRL',
+                coletado_em TIMESTAMP NOT NULL
+            );
+        """)
+        cur.execute("""
+            CREATE INDEX IF NOT EXISTS idx_precos_produto_data
+            ON precos (produto, coletado_em);
+        """)
     conn.commit()
     conn.close()
-    print(f"Banco pronto em: {DB_PATH}")
+    print("Tabela 'precos' pronta no PostgreSQL.")
 
 
 if __name__ == "__main__":
