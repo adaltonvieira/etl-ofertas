@@ -1,8 +1,8 @@
 # ETL de Ofertas — Monitor de Preços
 
-Pipeline ETL didático em Python que coleta preços de uma API pública, armazena o histórico em PostgreSQL e gera relatório e gráfico de variação ao longo do tempo.
+Pipeline ETL didático em Python que coleta preços de uma API pública, armazena o histórico em PostgreSQL, expõe os dados por uma API REST (FastAPI) e gera relatório e gráfico de variação.
 
-Projeto construído de forma incremental: comecou em SQLite e foi migrado para PostgreSQL, reaproveitando quase todo o codigo SQL.
+Projeto construído de forma incremental: comecou em SQLite, foi migrado para PostgreSQL e ganhou uma API web.
 
 ## O que faz
 
@@ -10,8 +10,7 @@ Projeto construído de forma incremental: comecou em SQLite e foi migrado para P
 - Transform: limpa o JSON da API, mantendo apenas produto, preço e moeda.
 - Load: grava cada coleta no PostgreSQL com carimbo de data/hora.
 - Relatório: consultas SQL (mín./máx./média e variação com window function) e gráfico com matplotlib.
-
-A fonte de dados é facilmente substituível: trocando apenas a etapa de extração, o mesmo pipeline serve para preços de produtos via API ou scraping.
+- API: expõe os dados por HTTP com documentação interativa automática.
 
 ## Estrutura
 
@@ -23,7 +22,8 @@ A fonte de dados é facilmente substituível: trocando apenas a etapa de extraç
     │   ├── load.py          # etapa L: grava no PostgreSQL
     │   ├── main.py          # orquestra a coleta (E + T + L)
     │   ├── report.py        # relatorio + grafico
-    │   └── sql.py           # utilitario para rodar consultas SQL ad-hoc
+    │   ├── sql.py           # utilitario para rodar consultas SQL ad-hoc
+    │   └── api.py           # API REST (FastAPI)
     └── requirements.txt
 
 ## Pré-requisitos
@@ -50,26 +50,34 @@ Crie um arquivo `.env` na raiz com suas credenciais:
     DB_USER=adalton
     DB_PASSWORD=sua_senha
 
-Rode o pipeline:
+Colete os dados e gere o relatorio:
 
     python src/main.py     # coleta precos (rode varias vezes para acumular historico)
     python src/report.py   # gera relatorio e grafico
+
+## API REST
+
+Suba o servidor:
+
+    uvicorn api:app --reload --app-dir src
+
+Endpoints:
+
+- `GET /` — informacoes da API
+- `GET /precos` — coletas recentes (parametros: `produto`, `limite`)
+- `GET /precos/variacao` — variacao entre coletas (window function)
+- `GET /docs` — documentacao interativa (Swagger UI)
+
+Exemplo: http://localhost:8000/precos?produto=Dolar&limite=5
 
 ## Exemplo de saida
 
 ![Variacao de precos](charts/variacao_precos.png)
 
-## Exemplo de consulta SQL
-
-Variacao de preco entre uma coleta e a anterior (window function):
-
-    python src/sql.py "SELECT produto, coletado_em, preco, ROUND((preco - LAG(preco) OVER (PARTITION BY produto ORDER BY coletado_em))::numeric, 4) AS variacao FROM precos ORDER BY produto, coletado_em"
-
 ## Tecnologias
 
-Python, PostgreSQL, psycopg, python-dotenv, matplotlib
+Python, PostgreSQL, psycopg, FastAPI, uvicorn, python-dotenv, matplotlib
 
 ## Proximos passos
 
-- API REST com FastAPI por cima do banco.
 - Busca semantica de produtos com embeddings (pgvector / Chroma).
