@@ -1,7 +1,7 @@
 from collections import defaultdict
 from pathlib import Path
 import matplotlib
-matplotlib.use("Agg")   # gera imagem sem precisar de tela/janela
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from db import get_connection
 
@@ -20,10 +20,10 @@ def relatorio_texto():
         GROUP BY produto
     """).fetchall()
     conn.close()
-    print("\n=== Relatório de preços ===")
+    print("\n=== Relatorio de precos ===")
     for r in linhas:
         print(f"{r['produto']}: {r['coletas']} coletas | "
-              f"min {r['minimo']} | max {r['maximo']} | média {r['media']}")
+              f"min {r['minimo']} | max {r['maximo']} | media {r['media']}")
 
 
 def grafico_variacao():
@@ -40,21 +40,31 @@ def grafico_variacao():
         series[r["produto"]]["x"].append(r["coletado_em"])
         series[r["produto"]]["y"].append(r["preco"])
 
-    plt.figure(figsize=(11, 6))
-    for produto, dados in series.items():
-        plt.plot(dados["x"], dados["y"], marker="o", label=produto)
+    produtos = list(series.keys())
+    n = len(produtos)
 
-    plt.title("Variação de preço ao longo do tempo")
-    plt.xlabel("Coletado em")
-    plt.ylabel("Preço (BRL)")
-    plt.xticks(rotation=45, ha="right")
-    plt.legend()
-    plt.tight_layout()
+    # Um painel por produto, cada um com seu proprio eixo Y.
+    fig, axes = plt.subplots(n, 1, figsize=(11, 3 * n), sharex=True)
+    if n == 1:
+        axes = [axes]
+
+    cores = plt.cm.tab10.colors
+    for ax, produto, cor in zip(axes, produtos, cores):
+        dados = series[produto]
+        ax.plot(dados["x"], dados["y"], marker="o", color=cor)
+        ax.set_title(produto)
+        ax.set_ylabel("Preco (BRL)")
+        ax.grid(True, alpha=0.3)
+
+    axes[-1].set_xlabel("Coletado em")
+    plt.setp(axes[-1].get_xticklabels(), rotation=45, ha="right")
+    fig.suptitle("Variacao de preco ao longo do tempo")
+    fig.tight_layout()
 
     CHARTS_DIR.mkdir(exist_ok=True)
     destino = CHARTS_DIR / "variacao_precos.png"
-    plt.savefig(destino, dpi=120)
-    print(f"\nGráfico salvo em: {destino}")
+    fig.savefig(destino, dpi=120)
+    print(f"\nGrafico salvo em: {destino}")
 
 
 if __name__ == "__main__":
