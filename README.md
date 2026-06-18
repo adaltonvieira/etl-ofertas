@@ -1,8 +1,8 @@
 # ETL de Ofertas — Monitor de Preços
 
-Pipeline ETL didático em Python que coleta preços de uma API pública, armazena o histórico em PostgreSQL, expõe os dados por uma API REST (FastAPI) e gera relatório e gráfico de variação.
+Pipeline ETL didático em Python que coleta preços de uma API pública, armazena o histórico em PostgreSQL, expõe os dados por uma API REST (FastAPI) e visualiza tudo num dashboard interativo (Streamlit).
 
-Projeto construído de forma incremental: comecou em SQLite, foi migrado para PostgreSQL e ganhou uma API web.
+Projeto construído de forma incremental: comecou em SQLite, foi migrado para PostgreSQL, ganhou uma API web e um dashboard.
 
 ## O que faz
 
@@ -10,7 +10,8 @@ Projeto construído de forma incremental: comecou em SQLite, foi migrado para Po
 - Transform: limpa o JSON da API, mantendo apenas produto, preço e moeda.
 - Load: grava cada coleta no PostgreSQL com carimbo de data/hora.
 - Relatório: consultas SQL (mín./máx./média e variação com window function) e gráfico com matplotlib.
-- API: expõe os dados por HTTP com documentação interativa automática.
+- API: expõe os dados por HTTP com documentação interativa automática (FastAPI).
+- Dashboard: app web interativo com Pandas + Streamlit.
 
 ## Estrutura
 
@@ -22,8 +23,9 @@ Projeto construído de forma incremental: comecou em SQLite, foi migrado para Po
     │   ├── load.py          # etapa L: grava no PostgreSQL
     │   ├── main.py          # orquestra a coleta (E + T + L)
     │   ├── report.py        # relatorio + grafico
-    │   ├── sql.py           # utilitario para rodar consultas SQL ad-hoc
-    │   └── api.py           # API REST (FastAPI)
+    │   ├── sql.py           # utilitario para consultas SQL ad-hoc
+    │   ├── api.py           # API REST (FastAPI)
+    │   └── dashboard.py     # dashboard (Streamlit)
     └── requirements.txt
 
 ## Pré-requisitos
@@ -57,18 +59,15 @@ Colete os dados e gere o relatorio:
 
 ## API REST
 
-Suba o servidor:
-
     uvicorn api:app --reload --app-dir src
 
-Endpoints:
+Endpoints: `GET /precos`, `GET /precos/variacao`, `GET /docs` (Swagger UI).
 
-- `GET /` — informacoes da API
-- `GET /precos` — coletas recentes (parametros: `produto`, `limite`)
-- `GET /precos/variacao` — variacao entre coletas (window function)
-- `GET /docs` — documentacao interativa (Swagger UI)
+## Dashboard
 
-Exemplo: http://localhost:8000/precos?produto=Dolar&limite=5
+    streamlit run src/dashboard.py
+
+App interativo que le os dados do PostgreSQL: preco atual, minimo/maximo, grafico de variacao e historico, com seletor de moeda.
 
 ## Exemplo de saida
 
@@ -76,7 +75,7 @@ Exemplo: http://localhost:8000/precos?produto=Dolar&limite=5
 
 ## Tecnologias
 
-Python, PostgreSQL, psycopg, FastAPI, uvicorn, python-dotenv, matplotlib
+Python, PostgreSQL, psycopg, FastAPI, uvicorn, Streamlit, Pandas, python-dotenv, matplotlib
 
 ## Proximos passos
 
